@@ -16,7 +16,7 @@ MAX_ATTEMPTS = 3
 MAX_THREADS = 15
 BASE_PREFIX = "237Z1A05"
 
-SUBJECT_SHEETS = ["Overall %", "CN", "DEVOPS", "PPL", "NPL", "DAA"]
+SUBJECT_SHEETS = ["Overall %", "CN", "DEVOPS", "PPL", "NLP", "DAA"]
 
 # === Google Sheets Setup ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
