@@ -68,7 +68,7 @@ def generate_roll_numbers():
             continue
         rolls.append(BASE_PREFIX + str(num))
     for letter in ["A", "B", "C", "D"]:
-        for d in range(1, 10):
+        for d in range(0, 10):
             rolls.append(BASE_PREFIX + f"{letter}{d}")
     return rolls
 
