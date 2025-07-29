@@ -92,7 +92,7 @@ def process_roll(rollP):
                 attendance_percent = cols[5].text.strip()
 
                 # Clean & Match
-                for key in ["CN", "DEVOPS", "PPL", "NPL", "DAA"]:
+                for key in ["CN", "DEVOPS", "PPL", "NLP", "DAA"]:
                     if key in subject_name and attendance_percent != "":
                         subject_data[key] = attendance_percent
                         break
