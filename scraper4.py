@@ -13,10 +13,10 @@ import time
 # === CONFIG ===
 SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
 MAX_ATTEMPTS = 3
-MAX_THREADS = 2
+MAX_THREADS = 1
 BASE_PREFIX = "237Z1A05"
 
-SUBJECT_SHEETS = ["Overall %", "CN", "DEVOPS", "PPL", "NLP", "DAA"]
+SUBJECT_SHEETS = ["Overall %", "CN", "DEVOPS", "PPL", "NLP", "DAA", "CN LAB", "DEVOPS LAB", "ACS LAB", "IPR", "Sports", "Men", "Association", "Library"]
 
 # === Google Sheets Setup ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -92,7 +92,7 @@ def process_roll(rollP):
                 attendance_percent = cols[5].text.strip()
 
                 # Clean & Match
-                for key in ["CN", "DEVOPS", "PPL", "NLP", "DAA"]:
+                for key in ["CN", "DEVOPS", "PPL", "NLP", "DAA", "CN LAB", "DEVOPS LAB", "ACS LAB", "IPR", "Sports", "Men", "Association", "Library"]:
                     if key in subject_name and attendance_percent != "":
                         subject_data[key] = attendance_percent
                         break
