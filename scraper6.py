@@ -133,7 +133,7 @@ def run_parallel_scraping():
                     try:
                         sheets[subject].update_cell(row, col, value)
                         print(f"✅ Updated {subject} → {roll}: {value}")
-                        time.sleep(1.5)  # Throttle API requests
+                        time.sleep(2.1)  # Throttle API requests
                     except Exception as e:
                         print(f"❌ Error writing to {subject} for {roll}: {e}")
                 else:
