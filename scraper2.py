@@ -15,7 +15,7 @@ SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
 MAX_ATTEMPTS = 3
 MAX_THREADS = 15
 BASE_PREFIX = "237Z1A05"
-SUBJECTS = ["DAA", "CN", "DEVOPS", "PPL", "NPL"]  # ✅ Subject list
+SUBJECTS = ["DAA", "CN", "DEVOPS", "PPL", "NLP"]  # ✅ Subject list
 
 # === Google Sheets Setup ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
