@@ -22,50 +22,22 @@ SUBJECT_SHEETS = [
     "Sports", "Men", "Association", "Library"
 ]
 
+# === SUBJECT NAME NORMALIZATION ===
 SUBJECT_ALIASES = {
-    "CN": "CN",
-    "DEVOPS": "DEVOPS",
-    "PPL": "PPL",
-    "NLP": "NLP",
-    "DAA": "DAA",
-    "CN LAB": "CN LAB",
-    "DEVOPS LAB": "DEVOPS LAB",
-    "ACS LAB": "ACS LAB",
-    "IPR": "IPR",
-    "SPORTS": "Sports",
-    "MEN": "Men",
-    "ASSOC": "Association",
-    "ASSOCIATION": "Association",
-    "LIB": "Library",
-    "LIBRARY": "Library"
+    "CN": "CN", "DEVOPS": "DEVOPS", "PPL": "PPL", "NLP": "NLP", "DAA": "DAA",
+    "CN LAB": "CN LAB", "DEVOPS LAB": "DEVOPS LAB", "ACS LAB": "ACS LAB", "IPR": "IPR",
+    "SPORTS": "Sports", "MEN": "Men", "ASSOC": "Association", "ASSOCIATION": "Association",
+    "LIB": "Library", "LIBRARY": "Library"
 }
 
-ATTENDED_RANGES = {
-    "DAA": "F",
-    "CN": "H",
-    "DEVOPS": "J",
-    "PPL": "L",
-    "NLP": "N",
-    "CN LAB": "P",
-    "DEVOPS LAB": "R",
-    "ACS LAB": "T",
-    "IPR": "V",
-    "Sports": "X",
-    "Men": "Z",
-    "Association": "AB",
-    "Library": "AD"
-}
-
-CLEAR_RANGES = [
-    "D8:D20", "J8:J20", "F27:F91", "H27:H91", "J27:J91", "L27:L91", "N27:N91",
-    "P27:P91", "R27:R91", "T27:T91", "V27:V91", "X27:X91", "Z27:Z91", "AB27:AB91", "AD27:AD91"
-]
-
+# === SETUP GOOGLE SHEETS ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
 client = gspread.authorize(creds)
 sheets = {name: client.open_by_key(SHEET_ID).worksheet(name) for name in SUBJECT_SHEETS}
+class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
 
+# === CHROME OPTIONS ===
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--headless=new")
 chrome_options.add_argument("--no-sandbox")
@@ -73,23 +45,28 @@ chrome_options.add_argument("--disable-dev-shm-usage")
 chrome_options.add_argument("--disable-notifications")
 chrome_options.add_argument("--log-level=3")
 chrome_options.add_argument("--window-size=1280,800")
-
 chrome_path = which("chromium-browser")
 if chrome_path:
     chrome_options.binary_location = chrome_path
 
+# === CLEAR RANGES IN CLASS SHEET ===
+def clear_attendance_sheet():
+    ranges = [
+        "D8:D20", "J8:J20", "F27:F91", "H27:H91", "J27:J91", "L27:L91",
+        "N27:N91", "P27:P91", "R27:R91", "T27:T91", "V27:V91", "X27:X91",
+        "Z27:Z91", "AB27:AB91", "AD27:AD91"
+    ]
+    for rng in ranges:
+        class_sheet.batch_clear([rng])
+    print("🧹 Cleared Attendence CSE-B(2023-27) ranges.")
+
+# === ROLL NUMBERS ===
 def generate_roll_numbers():
-    rolls = []
-    for num in range(72, 100):
-        if str(num) in ["80", "88"]:
-            continue
-        rolls.append(BASE_PREFIX + str(num))
-    for letter in ["A", "B", "C", "D"]:
-        for d in range(0, 10):
-            rolls.append(BASE_PREFIX + f"{letter}{d}")
-    rolls.append("237Z1A05A8")
+    rolls = [BASE_PREFIX + str(n) for n in range(72, 100) if str(n) not in ["80", "88"]]
+    rolls += [BASE_PREFIX + f"{l}{d}" for l in "ABCD" for d in range(10)]
     return rolls
 
+# === ADD COLUMN ===
 def prepare_new_column(sheet):
     ist_time = datetime.now(ZoneInfo("Asia/Kolkata"))
     timestamp = ist_time.strftime("%Y-%m-%d %I:%M %p")
@@ -97,16 +74,39 @@ def prepare_new_column(sheet):
     sheet.update_cell(10, 3, timestamp)
     return 3
 
+# === ROLL MAPPING ===
 def get_roll_row_mapping(sheet):
     all_rows = sheet.get_all_values()
     return {row[0].strip(): idx for idx, row in enumerate(all_rows[10:], start=11) if row and row[0].strip()}
 
-def clear_attendance_cells():
-    sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
-    for rng in CLEAR_RANGES:
-        sheet.batch_clear([rng])
-        time.sleep(1.5)
+# === CLASSES HELD FOR ONE ROLL ===
+def extract_classes_held(rollP):
+    driver = webdriver.Chrome(options=chrome_options)
+    wait = WebDriverWait(driver, 10)
+    try:
+        driver.get("https://exams-nnrg.in/BeeSERP/Login.aspx")
+        wait.until(EC.presence_of_element_located((By.ID, "txtUserName"))).send_keys(rollP)
+        driver.find_element(By.ID, "btnNext").click()
+        wait.until(EC.presence_of_element_located((By.ID, "txtPassword"))).send_keys(rollP)
+        driver.find_element(By.ID, "btnSubmit").click()
+        wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Click Here to go Student Dashbord"))).click()
+        wait.until(EC.presence_of_element_located((By.ID, "ctl00_cpStud_grdSubject")))
 
+        rows = driver.find_element(By.ID, "ctl00_cpStud_grdSubject").find_elements(By.TAG_NAME, "tr")[1:-1]
+        held = []
+        for r in rows:
+            cols = r.find_elements(By.TAG_NAME, "td")
+            if len(cols) >= 4:
+                held.append(cols[3].text.strip() or "0")
+        return held + ["0"] * (13 - len(held))
+    except Exception as e:
+        print(f"❌ Error fetching classes held for {rollP}: {e}")
+        return ["0"] * 13
+    finally:
+        try: driver.quit()
+        except: pass
+
+# === SCRAPE ONE ROLL ===
 def process_roll(rollP):
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
@@ -120,87 +120,87 @@ def process_roll(rollP):
             wait.until(EC.presence_of_element_located((By.ID, "txtPassword"))).send_keys(rollP)
             driver.find_element(By.ID, "btnSubmit").click()
             wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Click Here to go Student Dashbord"))).click()
-
             wait.until(EC.presence_of_element_located((By.ID, "ctl00_cpStud_lblTotalPercentage")))
-            overall_attendance = driver.find_element(By.ID, "ctl00_cpStud_lblTotalPercentage").text.strip()
 
-            subjects_table = driver.find_element(By.ID, "ctl00_cpStud_grdSubject")
-            rows = subjects_table.find_elements(By.TAG_NAME, "tr")[1:]
-
-            subject_data = {"Overall %": overall_attendance}
-            attended_map = {}
-            for row in rows:
-                cols = row.find_elements(By.TAG_NAME, "td")
-                if len(cols) < 6:
-                    continue
-                subject_text = cols[1].text.upper().split(":")[0].strip()
-                attendance_percent = cols[5].text.strip()
-                classes_attended = cols[3].text.strip()
-                key = SUBJECT_ALIASES.get(subject_text)
-                if key and attendance_percent and attendance_percent != "&nbsp;":
-                    subject_data[key] = attendance_percent
-                    if classes_attended and classes_attended != "&nbsp;":
-                        attended_map[key] = classes_attended
-
-            return (rollP[:-1], subject_data, attended_map)
-
+            overall = driver.find_element(By.ID, "ctl00_cpStud_lblTotalPercentage").text.strip()
+            table = driver.find_element(By.ID, "ctl00_cpStud_grdSubject")
+            rows = table.find_elements(By.TAG_NAME, "tr")[1:]
+            data = {"Overall %": overall}
+            attended = []
+            for r in rows:
+                cols = r.find_elements(By.TAG_NAME, "td")
+                if len(cols) < 6: continue
+                subject = cols[1].text.upper().split(":"[0]).strip()
+                percent = cols[5].text.strip()
+                attended_val = cols[2].text.strip()
+                key = SUBJECT_ALIASES.get(subject)
+                if key and percent and percent != "&nbsp;":
+                    data[key] = percent
+                    attended.append(attended_val)
+            return (rollP[:-1], data, attended)
         except Exception as e:
             print(f"⚠️ Attempt {attempt} failed for {rollP} — {e}")
             time.sleep(0.5)
         finally:
-            try:
-                driver.quit()
-            except:
-                pass
-
+            try: driver.quit()
+            except: pass
     print(f"❌ Failed to scrape {rollP}")
-    return (rollP[:-1], {}, {})
+    return (rollP[:-1], {}, [])
 
+# === MAIN ===
 def run_parallel_scraping():
+    clear_attendance_sheet()
     rolls = generate_roll_numbers()
     roll_with_p = [r + "P" for r in rolls]
-    roll_to_row = {sheet: get_roll_row_mapping(sheets[sheet]) for sheet in SUBJECT_SHEETS}
-    col_index = {sheet: prepare_new_column(sheets[sheet]) for sheet in SUBJECT_SHEETS}
-    clear_attendance_cells()
+    roll_to_row = {s: get_roll_row_mapping(sheets[s]) for s in SUBJECT_SHEETS}
+    col_index = {s: prepare_new_column(sheets[s]) for s in SUBJECT_SHEETS}
 
-    class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
-    attended_data = {subject: {} for subject in ATTENDED_RANGES}
+    held_72 = extract_classes_held(roll_with_p[0])
+    time.sleep(2.5)
+    class_sheet.update("D8:D20", [[v] for v in held_72])
+    print("✅ Inserted Classes Held from 72 into D8:D20")
+    time.sleep(2.5)
+
+    held_a8 = extract_classes_held("237Z1A05A8P")
+    time.sleep(2.5)
+    class_sheet.update("J8:J20", [[v] for v in held_a8])
+    time.sleep(2.5)
+    print("✅ Inserted Classes Held from A8 into J8:J20")
+
+    attend_ranges = [
+        "F27:F91", "H27:H91", "J27:J91", "L27:L91", "N27:N91", "P27:P91",
+        "R27:R91", "T27:T91", "V27:V91", "X27:X91", "Z27:Z91", "AB27:AB91", "AD27:AD91"
+    ]
 
     with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
-        futures = {executor.submit(process_roll, roll): roll for roll in roll_with_p}
-        for future in as_completed(futures):
-            roll, subj_data, attended_map = future.result()
-            if not subj_data:
+        futures = {executor.submit(process_roll, r): r for r in roll_with_p}
+        for f in as_completed(futures):
+            roll, data, attended = f.result()
+            if not data:
                 continue
-            for subject, attendance in subj_data.items():
+            for subject, val in data.items():
                 if roll in roll_to_row.get(subject, {}):
                     row = roll_to_row[subject][roll]
                     col = col_index[subject]
-                    value = attendance if subject == "Overall %" else attendance + " %"
+                    val = val if subject == "Overall %" else val + " %"
                     try:
-                        sheets[subject].update_cell(row, col, value)
-                        print(f"✅ Updated {subject} → {roll}: {value}")
+                        sheets[subject].update_cell(row, col, val)
+                        print(f"✅ Updated {subject} → {roll}: {val}")
                         time.sleep(3.1)
                     except Exception as e:
                         print(f"❌ Error writing to {subject} for {roll}: {e}")
                 else:
                     print(f"⚠️ Roll {roll} not found in sheet: {subject}")
 
-            for subject, attended in attended_map.items():
-                if subject in attended_data:
-                    attended_data[subject][roll] = attended
-
-    for subject, col_letter in ATTENDED_RANGES.items():
-        if subject in attended_data:
-            rolls_in_order = [r[:-1] for r in generate_roll_numbers()]
-            values = [[attended_data[subject].get(roll, "")] for roll in rolls_in_order]
-            try:
-                cell_range = f"{col_letter}27:{col_letter}{26 + len(values)}"
-                class_sheet.update(cell_range, values)
-                print(f"✅ Inserted attended classes for {subject} into {cell_range}")
-                time.sleep(2.5)
-            except Exception as e:
-                print(f"❌ Failed to update attended for {subject}: {e}")
+            if attended:
+                try:
+                    idx = rolls.index(roll)
+                    for i, val in enumerate(attended):
+                        class_sheet.update_cell(27 + idx, 6 + 2 * i, val)
+                    print(f"📥 Inserted attended classes for {roll}")
+                    time.sleep(3.1)
+                except Exception as e:
+                    print(f"❌ Error inserting attended classes for {roll}: {e}")
 
 if __name__ == "__main__":
     run_parallel_scraping()
