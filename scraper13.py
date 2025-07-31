@@ -30,6 +30,14 @@ SUBJECT_ALIASES = {
     "LIB": "Library", "LIBRARY": "Library"
 }
 
+# Mapping for classes attended ranges in class sheet
+ATTENDED_RANGES = {
+    "DAA": "F27:F91", "CN": "H27:H91", "DEVOPS": "J27:J91", "PPL": "L27:L91",
+    "NLP": "N27:N91", "CN LAB": "P27:P91", "DEVOPS LAB": "R27:R91", "ACS LAB": "T27:T91",
+    "IPR": "V27:V91", "Sports": "X27:X91", "Men": "Z27:Z91",
+    "Association": "AB27:AB91", "Library": "AD27:AD91"
+}
+
 # === SETUP GOOGLE SHEETS ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
@@ -126,17 +134,21 @@ def process_roll(rollP):
             table = driver.find_element(By.ID, "ctl00_cpStud_grdSubject")
             rows = table.find_elements(By.TAG_NAME, "tr")[1:]
             data = {"Overall %": overall}
-            attended = []
+            attended = {}
+
             for r in rows:
                 cols = r.find_elements(By.TAG_NAME, "td")
-                if len(cols) < 6: continue
-                subject = cols[1].text.upper().split(":"[0]).strip()
+                if len(cols) < 6:
+                    continue
+                subject = cols[1].text.upper().split(":")[0].strip()
                 percent = cols[5].text.strip()
-                attended_val = cols[2].text.strip()
+                attended_classes = cols[2].text.strip() if len(cols) > 2 else "0"
                 key = SUBJECT_ALIASES.get(subject)
-                if key and percent and percent != "&nbsp;":
-                    data[key] = percent
-                    attended.append(attended_val)
+                if key:
+                    if percent and percent != "&nbsp;":
+                        data[key] = percent
+                    if attended_classes and attended_classes != "&nbsp;":
+                        attended[key] = attended_classes
             return (rollP[:-1], data, attended)
         except Exception as e:
             print(f"⚠️ Attempt {attempt} failed for {rollP} — {e}")
@@ -145,7 +157,7 @@ def process_roll(rollP):
             try: driver.quit()
             except: pass
     print(f"❌ Failed to scrape {rollP}")
-    return (rollP[:-1], {}, [])
+    return (rollP[:-1], {}, {})
 
 # === MAIN ===
 def run_parallel_scraping():
@@ -164,13 +176,10 @@ def run_parallel_scraping():
     held_a8 = extract_classes_held("237Z1A05A8P")
     time.sleep(2.5)
     class_sheet.update("J8:J20", [[v] for v in held_a8])
-    time.sleep(2.5)
     print("✅ Inserted Classes Held from A8 into J8:J20")
+    time.sleep(2.5)
 
-    attend_ranges = [
-        "F27:F91", "H27:H91", "J27:J91", "L27:L91", "N27:N91", "P27:P91",
-        "R27:R91", "T27:T91", "V27:V91", "X27:X91", "Z27:Z91", "AB27:AB91", "AD27:AD91"
-    ]
+    class_rows = get_roll_row_mapping(class_sheet)
 
     with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         futures = {executor.submit(process_roll, r): r for r in roll_with_p}
@@ -192,15 +201,19 @@ def run_parallel_scraping():
                 else:
                     print(f"⚠️ Roll {roll} not found in sheet: {subject}")
 
-            if attended:
-                try:
-                    idx = rolls.index(roll)
-                    for i, val in enumerate(attended):
-                        class_sheet.update_cell(27 + idx, 6 + 2 * i, val)
-                    print(f"📥 Inserted attended classes for {roll}")
-                    time.sleep(3.1)
-                except Exception as e:
-                    print(f"❌ Error inserting attended classes for {roll}: {e}")
+            # Insert classes attended in "Attendence CSE-B(2023-27)"
+            for sub, att_val in attended.items():
+                rng = ATTENDED_RANGES.get(sub)
+                if rng and roll in class_rows:
+                    row = class_rows[roll]
+                    col_letter = rng[:rng.index(":")]
+                    cell = f"{col_letter}{row}"
+                    try:
+                        class_sheet.update(cell, att_val)
+                        print(f"📌 {sub} Attended → {roll} → {att_val}")
+                        time.sleep(3.1)
+                    except Exception as e:
+                        print(f"❌ Attended insert failed for {sub}, {roll}: {e}")
 
 if __name__ == "__main__":
     run_parallel_scraping()
