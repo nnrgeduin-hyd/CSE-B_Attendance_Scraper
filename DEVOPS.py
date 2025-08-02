@@ -16,7 +16,7 @@ CREDENTIAL_FILE = "credentials.json"
 MAX_ATTEMPTS = 3
 BASE_PREFIX = "237Z1A05"
 THREADS = 15
-BATCH_SIZE = THREADS  # one batch = max thread count
+BATCH_SIZE = THREADS  # one batch = max thread count.
 
 # === Google Sheets Setup ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
