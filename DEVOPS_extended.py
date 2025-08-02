@@ -112,8 +112,8 @@ def main():
     col_index = prepare_subject_column()
     all_rolls = generate_roll_numbers()
 
-    # Clear H27:H91
-    main_sheet.batch_clear(["H27:H91"])
+    # Clear J27:J91
+    main_sheet.batch_clear(["J27:J91"])
 
     for i in range(0, len(all_rolls), BATCH_SIZE):
         batch = all_rolls[i:i + BATCH_SIZE]
@@ -137,7 +137,7 @@ def main():
 
             if attended and roll in main_map:
                 row = main_map[roll]
-                main_cells.append(gspread.Cell(row=row, col=8, value=attended))  # col 8 = H
+                main_cells.append(gspread.Cell(row=row, col=10, value=attended))  # col 10 = J
             else:
                 print(f"❌ Missing roll {roll} in Attendence CSE-B(2023-27)")
 
