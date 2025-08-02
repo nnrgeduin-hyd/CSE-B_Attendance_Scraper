@@ -35,9 +35,9 @@ jobs:
       # ✅ Step 4: Create Google Sheets credentials
       - name: Create Google credentials file
         #run: echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
-          run: |
-            echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
-            echo '${{ secrets.GOOGLE_CREDENTIALS1 }}' > credentials1.json
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS1 }}' > credentials1.json
 
       # ✅ Step 5: Capture current IST time
       - name: Get current time in IST
