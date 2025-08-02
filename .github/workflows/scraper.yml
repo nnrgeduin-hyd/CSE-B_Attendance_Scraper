@@ -50,6 +50,7 @@ jobs:
       - name: Run scraper
         #run: python CN.py
         run: |
+          python DAA_extended.py &
           python CN_extended.py & 
           python DEVOPS_extended.py & 
           wait
