@@ -45,7 +45,11 @@ jobs:
 
       # ✅ Step 6: Run the Selenium scraper
       - name: Run scraper
-        run: python CN.py
+        #run: python CN.py
+          run: |
+            python CN.py & 
+            python DEVOPS.py & 
+            wait
 
       # ✅ Step 7: Send email notification (always runs)
       - name: Send email notification
