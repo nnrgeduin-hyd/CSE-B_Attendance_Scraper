@@ -38,6 +38,7 @@ jobs:
         run: |
           echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
           echo '${{ secrets.GOOGLE_CREDENTIALS1 }}' > credentials1.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS2 }}' > credentials2.json
 
       # ✅ Step 5: Capture current IST time
       - name: Get current time in IST
