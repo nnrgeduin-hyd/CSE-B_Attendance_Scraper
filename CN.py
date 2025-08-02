@@ -3,6 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from oauth2client.service_account import ServiceAccountCredentials
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from shutil import which
 from datetime import datetime
 import gspread
@@ -11,12 +12,15 @@ from zoneinfo import ZoneInfo
 # === CONFIG ===
 SUBJECT = "CN"
 SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
-MAX_ATTEMPTS = 15
+CREDENTIAL_FILE = "credentials.json"
+MAX_ATTEMPTS = 3
 BASE_PREFIX = "237Z1A05"
+THREADS = 15
+BATCH_SIZE = THREADS  # one batch = max thread count
 
 # === Google Sheets Setup ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIAL_FILE, scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet(SUBJECT)
 
@@ -78,11 +82,11 @@ def scrape_attendance(rollP):
                 if len(cols) < 6:
                     continue
                 subject_name = cols[1].text.upper().strip()
-                if "CN" in subject_name:
+                if SUBJECT in subject_name:
                     attendance = cols[5].text.strip()
                     if attendance and attendance != "&nbsp;":
-                        return attendance
-            return None
+                        return (rollP[:-1], attendance)
+            return (rollP[:-1], None)
 
         except Exception as e:
             print(f"⚠️ Attempt {attempt} failed for {rollP}: {e}")
@@ -92,7 +96,7 @@ def scrape_attendance(rollP):
             except:
                 pass
     print(f"❌ Failed to scrape {rollP}")
-    return None
+    return (rollP[:-1], None)
 
 # === Main Execution ===
 def main():
@@ -100,24 +104,33 @@ def main():
     col_index = prepare_column()
     all_rolls = generate_roll_numbers()
 
-    batch_updates = []
-    for roll in all_rolls:
-        if roll not in roll_map:
-            print(f"⚠️ Skipping {roll} (not found in sheet)")
-            continue
-        attendance = scrape_attendance(roll + "P")
-        if attendance:
-            cell = gspread.Cell(row=roll_map[roll], col=col_index, value=attendance + " %")
-            batch_updates.append(cell)
-            print(f"✅ {roll} scraped: {attendance}%")
-        else:
-            print(f"⚠️ {roll} — No attendance data")
+    for i in range(0, len(all_rolls), BATCH_SIZE):
+        batch = all_rolls[i:i + BATCH_SIZE]
+        results = []
 
-    if batch_updates:
-        sheet.update_cells(batch_updates)
-        print(f"🟢 Batch update complete: {len(batch_updates)} rows updated.")
-    else:
-        print("⚠️ No attendance data collected.")
+        with ThreadPoolExecutor(max_workers=THREADS) as executor:
+            futures = [executor.submit(scrape_attendance, roll + "P") for roll in batch]
+            for future in as_completed(futures):
+                result = future.result()
+                if result:
+                    results.append(result)
+
+        batch_cells = []
+        for roll, attendance in results:
+            if not attendance:
+                print(f"⚠️ No data for {roll}")
+                continue
+            if roll in roll_map:
+                row = roll_map[roll]
+                cell = gspread.Cell(row=row, col=col_index, value=attendance + " %")
+                batch_cells.append(cell)
+                print(f"✅ {roll} => {attendance}%")
+            else:
+                print(f"❌ Roll not in sheet: {roll}")
+
+        if batch_cells:
+            sheet.update_cells(batch_cells)
+            print(f"🟢 Batch of {len(batch_cells)} rows inserted.")
 
 if __name__ == "__main__":
     main()
