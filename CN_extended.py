@@ -88,7 +88,7 @@ def scrape_attendance(rollP):
                     continue
                 subject_name = cols[1].text.upper().strip()
                 if SUBJECT in subject_name:
-                    attended = cols[3].text.strip()
+                    attended = cols[4].text.strip()
                     return (rollP[:-1], attended if attended != "&nbsp;" else None)
             return (rollP[:-1], None)
 
