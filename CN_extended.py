@@ -16,14 +16,14 @@ CREDENTIAL_FILE = "credentials.json"
 MAX_ATTEMPTS = 3
 BASE_PREFIX = "237Z1A05"
 THREADS = 15
-BATCH_SIZE = THREADS  # one batch = max thread count
+BATCH_SIZE = THREADS
 
 # === Google Sheets Setup ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIAL_FILE, scope)
 client = gspread.authorize(creds)
-sheet = client.open_by_key(SHEET_ID).worksheet(SUBJECT)
-attended_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
+subject_sheet = client.open_by_key(SHEET_ID).worksheet(SUBJECT)
+main_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
 
 # === Chrome Options ===
 chrome_options = webdriver.ChromeOptions()
@@ -50,19 +50,19 @@ def generate_roll_numbers():
             rolls.append(BASE_PREFIX + f"{letter}{d}")
     return rolls
 
-def get_roll_row_mapping():
-    all_rows = sheet.get_all_values()
+def get_roll_row_mapping_main_sheet():
+    rows = main_sheet.get("B27:B91")
+    return {row[0].strip(): idx + 27 for idx, row in enumerate(rows) if row and row[0].strip()}
+
+def get_roll_row_mapping_subject_sheet():
+    all_rows = subject_sheet.get_all_values()
     return {row[0].strip(): idx for idx, row in enumerate(all_rows[10:], start=11) if row and row[0].strip()}
 
-def get_attended_row_map():
-    data = attended_sheet.get_all_values()
-    return {row[1].strip(): idx for idx, row in enumerate(data[26:], start=27) if len(row) > 1 and row[1].strip()}
-
-def prepare_column():
+def prepare_subject_column():
     ist_time = datetime.now(ZoneInfo("Asia/Kolkata"))
     timestamp = ist_time.strftime("%Y-%m-%d %I:%M %p")
-    sheet.insert_cols([[]], 3)
-    sheet.update_cell(10, 3, timestamp)
+    subject_sheet.insert_cols([[]], 3)
+    subject_sheet.update_cell(10, 3, timestamp)
     return 3
 
 def scrape_attendance(rollP):
@@ -88,9 +88,11 @@ def scrape_attendance(rollP):
                     continue
                 subject_name = cols[1].text.upper().strip()
                 if SUBJECT in subject_name:
+                    percentage = cols[5].text.strip()
                     attended = cols[4].text.strip()
-                    return (rollP[:-1], attended if attended != "&nbsp;" else None)
-            return (rollP[:-1], None)
+                    return (rollP[:-1], percentage, attended)
+
+            return (rollP[:-1], None, None)
 
         except Exception as e:
             print(f"⚠️ Attempt {attempt} failed for {rollP}: {e}")
@@ -99,18 +101,19 @@ def scrape_attendance(rollP):
                 driver.quit()
             except:
                 pass
+
     print(f"❌ Failed to scrape {rollP}")
-    return (rollP[:-1], None)
+    return (rollP[:-1], None, None)
 
 # === Main Execution ===
 def main():
-    roll_map = get_roll_row_mapping()
-    col_index = prepare_column()
+    main_map = get_roll_row_mapping_main_sheet()
+    subj_map = get_roll_row_mapping_subject_sheet()
+    col_index = prepare_subject_column()
     all_rolls = generate_roll_numbers()
 
-    # Clear H27:H91 in Attendence CSE-B(2023-27)
-    attended_sheet.batch_clear(["H27:H91"])
-    print("🧹 Cleared H27:H91 in 'Attendence CSE-B(2023-27)'")
+    # Clear H27:H91
+    main_sheet.batch_clear(["H27:H91"])
 
     for i in range(0, len(all_rolls), BATCH_SIZE):
         batch = all_rolls[i:i + BATCH_SIZE]
@@ -123,38 +126,28 @@ def main():
                 if result:
                     results.append(result)
 
-        # Insert % into subject sheet
-        batch_cells = []
-        for roll, attendance in results:
-            if not attendance:
-                print(f"⚠️ No data for {roll}")
-                continue
-            if roll in roll_map:
-                row = roll_map[roll]
-                cell = gspread.Cell(row=row, col=col_index, value=attendance + " %")
-                batch_cells.append(cell)
-                print(f"✅ {roll} => {attendance}%")
+        subject_cells = []
+        main_cells = []
+
+        for roll, percent, attended in results:
+            if percent and roll in subj_map:
+                row = subj_map[roll]
+                subject_cells.append(gspread.Cell(row=row, col=col_index, value=percent + " %"))
+                print(f"✅ {roll} => {percent}%")
+
+            if attended and roll in main_map:
+                row = main_map[roll]
+                main_cells.append(gspread.Cell(row=row, col=8, value=attended))  # col 8 = H
             else:
-                print(f"❌ Roll not in subject sheet: {roll}")
-        if batch_cells:
-            sheet.update_cells(batch_cells)
-            print(f"🟢 Inserted % for {len(batch_cells)} rolls.")
+                print(f"❌ Missing roll {roll} in Attendence CSE-B(2023-27)")
 
-        # Insert Classes Attended into Attendence CSE-B(2023-27)
-        attended_map = get_attended_row_map()
-        attended_col_index = 8  # Column H
-        batch_cells_attended = []
+        if subject_cells:
+            subject_sheet.update_cells(subject_cells)
+            print(f"🟢 Subject sheet: Inserted {len(subject_cells)} % cells")
 
-        for roll, attended in results:
-            if roll in attended_map and attended:
-                row = attended_map[roll]
-                cell = gspread.Cell(row=row, col=attended_col_index, value=attended)
-                batch_cells_attended.append(cell)
-                print(f"📘 {roll} => Attended: {attended}")
-
-        if batch_cells_attended:
-            attended_sheet.update_cells(batch_cells_attended)
-            print(f"🟦 Inserted attended values in H27:H91 for {len(batch_cells_attended)} rolls.")
+        if main_cells:
+            main_sheet.update_cells(main_cells)
+            print(f"🟢 Main sheet: Inserted {len(main_cells)} attended values")
 
 if __name__ == "__main__":
     main()
