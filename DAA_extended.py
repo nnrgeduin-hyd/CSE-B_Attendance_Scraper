@@ -113,7 +113,7 @@ def main():
     all_rolls = generate_roll_numbers()
 
     # Clear F27:F91
-    main_sheet.batch_clear([FJ27:F91"])
+    main_sheet.batch_clear(["FJ27:F91"])
 
     for i in range(0, len(all_rolls), BATCH_SIZE):
         batch = all_rolls[i:i + BATCH_SIZE]
