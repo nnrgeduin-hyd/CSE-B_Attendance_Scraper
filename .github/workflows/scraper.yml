@@ -51,7 +51,7 @@ jobs:
         #run: python CN.py
         run: |
           python CN_extended.py & 
-          python DEVOPS.py & 
+          python DEVOPS_extended.py & 
           wait
 
       # ✅ Step 7: Send email notification (always runs)
