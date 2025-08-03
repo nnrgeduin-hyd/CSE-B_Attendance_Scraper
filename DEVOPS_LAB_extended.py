@@ -10,7 +10,7 @@ import gspread
 from zoneinfo import ZoneInfo
 
 # === CONFIG ===
-SUBJECT = "CEVOPS LAB"
+SUBJECT = "DEVOPS LAB"
 SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
 CREDENTIAL_FILE = "credentials2.json"
 MAX_ATTEMPTS = 3
