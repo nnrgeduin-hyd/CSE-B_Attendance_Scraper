@@ -10,9 +10,9 @@ import gspread
 from zoneinfo import ZoneInfo
 
 # === CONFIG ===
-SUBJECT = "Sports"
+SUBJECT = "CN"
 SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
-CREDENTIAL_FILE = "credentials1.json"
+CREDENTIAL_FILE = "credentials2.json"
 MAX_ATTEMPTS = 3
 BASE_PREFIX = "237Z1A05"
 THREADS = 15
@@ -112,7 +112,7 @@ def main():
     col_index = prepare_subject_column()
     all_rolls = generate_roll_numbers()
 
-    # Clear X27:X91
+    # Clear R27:R91
     main_sheet.batch_clear(["X27:X91"])
 
     for i in range(0, len(all_rolls), BATCH_SIZE):
