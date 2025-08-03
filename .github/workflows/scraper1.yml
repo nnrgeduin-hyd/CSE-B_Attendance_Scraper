@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        subject: [DAA_extended.py, CN_extended.py, DEVOPS_extended.py, PPL_extended.py, NLP_extended.py, CN LAB_extended.py]
+        subject: [DAA_extended.py, CN_extended.py, DEVOPS_extended.py, PPL_extended.py, NLP_extended.py, CN_LAB_extended.py]
 
     steps:
       - name: Checkout repository
