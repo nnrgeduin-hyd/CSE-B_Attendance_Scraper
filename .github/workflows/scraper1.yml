@@ -5,7 +5,7 @@ on:
     - cron: "30 20 * * *"  # 2:00 AM IST
     - cron: "30 2 * * *"   # 8:00 AM IST
     - cron: "30 6 * * *"   # 12:00 PM IST
-    - cron: "30 10 * * *"  # 4:00 PM IST
+    - cron: "30 10 * * *"  # 4:00 PM IST   echo "now=$(date '+%Y-%m-%d %H:%M:%S %Z')" >> $GITHUB_OUTPUT
   workflow_dispatch:
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
         id: runtime
         run: |
           export TZ=Asia/Kolkata
-          echo "now=$(date '+%Y-%m-%d %H:%M:%S %Z')" >> $GITHUB_OUTPUT
+          echo "::set-output name=now::$(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S %Z')"
 
       - name: Run scraper for ${{ matrix.subject }}
         run: |
