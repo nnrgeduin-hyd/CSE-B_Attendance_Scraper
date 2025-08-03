@@ -70,7 +70,7 @@ def scrape_attendance(rollP):
         try:
             driver = webdriver.Chrome(options=chrome_options)
             driver.set_page_load_timeout(30)
-            wait = WebDriverWait(driver, 5)
+            wait = WebDriverWait(driver, 2)
 
             driver.get("https://exams-nnrg.in/BeeSERP/Login.aspx")
             wait.until(EC.presence_of_element_located((By.ID, "txtUserName"))).send_keys(rollP)
