@@ -14,12 +14,11 @@ from zoneinfo import ZoneInfo
 SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
 MAX_ATTEMPTS = 3
 MAX_THREADS = 15
-CREDENTIAL_FILE = "credentials3.json"
 BASE_PREFIX = "237Z1A05"  # ✅ Correct prefix
 
 # === Google Sheets Setup ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("CREDENTIAL_FILE", scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet("Overall %")
 
