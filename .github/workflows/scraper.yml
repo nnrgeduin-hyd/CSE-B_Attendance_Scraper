@@ -44,6 +44,15 @@ jobs:
           echo '${{ secrets.GOOGLE_CREDENTIALS3 }}' > credentials3.json
           echo '${{ secrets.GOOGLE_CREDENTIALS4 }}' > credentials4.json
           echo '${{ secrets.GOOGLE_CREDENTIALS5 }}' > credentials5.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS6 }}' > credentials6.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS7 }}' > credentials7.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS8 }}' > credentials8.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS9 }}' > credentials9.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS10 }}' > credentials10.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS11 }}' > credentials11.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS12 }}' > credentials12.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS13 }}' > credentials13.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS14 }}' > credentials14.json
 
       - name: Get current time in IST
         id: runtime
