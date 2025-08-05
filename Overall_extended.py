@@ -18,7 +18,7 @@ BASE_PREFIX = "237Z1A05"  # ✅ Correct prefix
 
 # === Google Sheets Setup ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name("credentials1.json", scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(SHEET_ID).worksheet("Overall %")
 
