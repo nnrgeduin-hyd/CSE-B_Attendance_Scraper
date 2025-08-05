@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 # === CONFIG ===
 SUBJECT = "MENTORING"
 SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
-CREDENTIAL_FILE = "credentials.json"
+CREDENTIAL_FILE = "credentials12.json"
 MAX_ATTEMPTS = 3
 BASE_PREFIX = "237Z1A05"
 THREADS = 15
