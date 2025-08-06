@@ -1,4 +1,4 @@
-name: Daily Selenium Scraper
+name: Daily Selenium Scraper Extended
 
 on:
   schedule:
@@ -17,13 +17,7 @@ jobs:
 
     strategy:
       matrix:
-        subject: [
-          Classesheld_extended.py, Overall_extended.py, DAA_extended.py, CN_extended.py,
-          DEVOPS_extended.py, PPL_extended.py, NLP_extended.py, CN_LAB_extended.py,
-          DEVOPS_LAB_extended.py, ACS_LAB_extended.py, IPR_extended.py,
-          Sports_extended.py, Mentoring_extended.py, Association_extended.py,
-          Library_extended.py
-        ]
+        subject: [Classesheld_extended.py, Overall_extended.py, DAA_extended.py, CN_extended.py, DEVOPS_extended.py, PPL_extended.py, NLP_extended.py, CN_LAB_extended.py, DEVOPS_LAB_extended.py, ACS_LAB_extended.py, IPR_extended.py, Sports_extended.py, Mentoring_extended.py, Association_extended.py, Library_extended.py]
 
     steps:
       - name: Checkout repository
@@ -34,20 +28,26 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install Chromium and Chromedriver (faster method)
+      - name: Install Chromium and Chromedriver (Fast Method)
         run: |
           sudo apt-get update
           sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4 libnss3 libxss1 libappindicator1 libindicator7
+          
+          # Install Chromium
           wget https://storage.googleapis.com/chrome-for-testing-public/122.0.6261.111/linux64/chrome-linux64.zip
           unzip chrome-linux64.zip
           sudo mv chrome-linux64 /opt/chrome
           sudo ln -s /opt/chrome/chrome /usr/bin/chromium-browser
+
+          # Install Chromedriver
           wget https://storage.googleapis.com/chrome-for-testing-public/122.0.6261.111/linux64/chromedriver-linux64.zip
           unzip chromedriver-linux64.zip
           sudo mv chromedriver-linux64/chromedriver /usr/bin/chromedriver
           sudo chmod +x /usr/bin/chromedriver
-          which chromium-browser
-          which chromedriver
+
+          # Confirm installations
+          chromium-browser --version
+          chromedriver --version
 
       - name: Install Python dependencies
         run: |
@@ -55,21 +55,21 @@ jobs:
 
       - name: Create Google credentials files
         run: |
-          echo "${{ secrets.GOOGLE_CREDENTIALS }}" > credentials.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS1 }}" > credentials1.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS2 }}" > credentials2.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS3 }}" > credentials3.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS4 }}" > credentials4.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS5 }}" > credentials5.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS6 }}" > credentials6.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS7 }}" > credentials7.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS8 }}" > credentials8.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS9 }}" > credentials9.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS10 }}" > credentials10.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS11 }}" > credentials11.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS12 }}" > credentials12.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS13 }}" > credentials13.json
-          echo "${{ secrets.GOOGLE_CREDENTIALS14 }}" > credentials14.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS1 }}' > credentials1.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS2 }}' > credentials2.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS3 }}' > credentials3.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS4 }}' > credentials4.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS5 }}' > credentials5.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS6 }}' > credentials6.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS7 }}' > credentials7.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS8 }}' > credentials8.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS9 }}' > credentials9.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS10 }}' > credentials10.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS11 }}' > credentials11.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS12 }}' > credentials12.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS13 }}' > credentials13.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS14 }}' > credentials14.json
 
       - name: Get current time in IST
         id: runtime
