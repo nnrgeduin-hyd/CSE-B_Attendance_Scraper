@@ -69,7 +69,7 @@ def scrape_attendance(rollP):
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
             driver = webdriver.Chrome(options=chrome_options)
-            driver.set_page_load_timeout(50)
+            driver.set_page_load_timeout(10)
             wait = WebDriverWait(driver, 5)
 
             driver.get("https://exams-nnrg.in/BeeSERP/Login.aspx")
