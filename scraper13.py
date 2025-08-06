@@ -60,7 +60,7 @@ def clear_attendance_sheet():
     global client, sheets, class_sheet  # Declare globals at the start
     ranges = [
         "D8:D20", "J8:J20", "F27:F91", "H27:H91", "J27:J91", "L27:L91",
-        "N27:N91", "P27:P91", "R27:P91", "T27:T91", "V27:V91", "X27:X91",
+        "N27:N91", "P27:P91", "R27:R91", "T27:T91", "V27:V91", "X27:X91",
         "Z27:Z91", "AB27:AB91", "AD27:AD91"
     ]
     try:
