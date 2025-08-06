@@ -30,8 +30,8 @@ SUBJECT_SHEETS = [
 SUBJECT_ALIASES = {
     "CN": "CN", "DEVOPS": "DEVOPS", "PPL": "PPL", "NLP": "NLP", "DAA": "DAA",
     "CN LAB": "CN LAB", "DEVOPS LAB": "DEVOPS LAB", "ACS LAB": "ACS LAB", "IPR": "IPR",
-    "SPORTS": "Sports", "MEN": "Mentoring", "ASSOC": "Association", "ASSOCIATION": "Association",
-    "LIB": "Library", "LIBRARY": "Library"
+    "SPORTS": "SPORTS", "MEN": "MENTORING", "ASSOC": "Association", "ASSOCIATION": "ASSOCIATION",
+    "LIB": "LIBRARY", "LIBRARY": "LIBRARY"
 }
 
 # === SETUP GOOGLE SHEETS ===
