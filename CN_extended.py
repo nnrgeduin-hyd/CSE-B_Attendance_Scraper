@@ -15,7 +15,7 @@ SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
 CREDENTIAL_FILE = "credentials3.json"
 MAX_ATTEMPTS = 3
 BASE_PREFIX = "237Z1A05"
-THREADS = 15
+THREADS = 2
 BATCH_SIZE = THREADS
 
 # === Google Sheets Setup ===
