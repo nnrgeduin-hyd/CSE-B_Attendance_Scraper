@@ -90,22 +90,22 @@ def scrape_attendance(subject, rollP):
                     return (rollP[:-1], percentage, attended)
             return (rollP[:-1], None, None)
         except Exception as e:
-            print(f"⚠️ Attempt {attempt} failed for {rollP}: {e}")
+            print(f"⚠️ Attempt {attempt} failed for {rollP} ({subject}): {e}")
         finally:
             try:
                 driver.quit()
             except:
                 pass
-    print(f"❌ Failed to scrape {rollP}")
+    print(f"❌ Failed to scrape {rollP} ({subject})")
     return (rollP[:-1], None, None)
 
-# === MAIN FUNCTION ===
+# === PER-SUBJECT SCRAPER ===
 def process_subject(subject_cfg):
     subject = subject_cfg["name"]
     cred_file = subject_cfg["cred"]
     main_col = subject_cfg["main_col"]
 
-    print(f"\n🚀 Starting: {subject}")
+    print(f"\n🚀 Starting subject: {subject}")
     client = setup_gspread(cred_file)
     subject_sheet = client.open_by_key(SHEET_ID).worksheet(subject)
     main_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
@@ -116,7 +116,7 @@ def process_subject(subject_cfg):
     all_rolls = generate_roll_numbers()
 
     # Clear main sheet column for this subject
-    main_col_letter = chr(64 + main_col)  # Convert number to Excel column (6=F, 8=H, 10=J)
+    main_col_letter = chr(64 + main_col)  # Convert 6 -> F, 8 -> H, 10 -> J
     main_sheet.batch_clear([f"{main_col_letter}27:{main_col_letter}91"])
 
     for i in range(0, len(all_rolls), BATCH_SIZE):
@@ -136,20 +136,25 @@ def process_subject(subject_cfg):
         for roll, percent, attended in results:
             if percent and roll in subj_map:
                 subject_cells.append(gspread.Cell(row=subj_map[roll], col=col_index, value=percent + " %"))
-                print(f"✅ {roll} => {percent}%")
+                print(f"✅ {subject} - {roll} => {percent}%")
             if attended and roll in main_map:
                 main_cells.append(gspread.Cell(row=main_map[roll], col=main_col, value=attended))
             else:
-                print(f"❌ Missing roll {roll} in Attendence Sheet")
+                print(f"❌ {subject} - Missing roll {roll} in main sheet")
 
         if subject_cells:
             subject_sheet.update_cells(subject_cells)
-            print(f"🟢 {subject} Sheet: Inserted {len(subject_cells)} % cells")
+            print(f"🟢 {subject} Sheet: {len(subject_cells)} % cells inserted")
         if main_cells:
             main_sheet.update_cells(main_cells)
-            print(f"🟢 Main Sheet: Inserted {len(main_cells)} attended values")
+            print(f"🟢 Main Sheet: {len(main_cells)} attended values inserted")
 
-# === START POINT ===
+# === TOP LEVEL PARALLEL EXECUTION ===
 if __name__ == "__main__":
-    for subject_config in SUBJECT_CONFIGS:
-        process_subject(subject_config)
+    with ThreadPoolExecutor(max_workers=len(SUBJECT_CONFIGS)) as executor:
+        futures = [executor.submit(process_subject, cfg) for cfg in SUBJECT_CONFIGS]
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as e:
+                print(f"❌ Error in one subject thread: {e}")
