@@ -53,11 +53,24 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Create Google credentials files
+      - name: Create Google credentials files (manual style)
         run: |
-          for i in {0..14}; do
-            echo "${{ secrets[format('GOOGLE_CREDENTIALS{0}', i) ] }}" > credentials${i}.json
-          done
+          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS1 }}' > credentials1.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS2 }}' > credentials2.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS3 }}' > credentials3.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS4 }}' > credentials4.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS5 }}' > credentials5.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS6 }}' > credentials6.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS7 }}' > credentials7.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS8 }}' > credentials8.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS9 }}' > credentials9.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS10 }}' > credentials10.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS11 }}' > credentials11.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS12 }}' > credentials12.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS13 }}' > credentials13.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS14 }}' > credentials14.json
+          # Add more as needed...
 
       - name: Get current time in IST
         id: runtime
@@ -87,16 +100,12 @@ jobs:
           from: "GitHub Actions Bot <${{ secrets.MAIL_USERNAME }}>"
           html_body: |
             <!DOCTYPE html>
-            <html lang="en">
+            <html>
             <head>
               <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Daily Attendance Scraper Report</title>
               <style>
                 body {
                   font-family: Arial, sans-serif;
-                  margin: 0;
-                  padding: 0;
                   background-color: #f5f8fa;
                   font-size: 12px;
                 }
@@ -106,7 +115,6 @@ jobs:
                   background-color: #ffffff;
                   border-radius: 14px;
                   border: 1px solid #e6ecf0;
-                  overflow: hidden;
                 }
                 .header-img {
                   width: 100%;
@@ -124,7 +132,6 @@ jobs:
                 .report-header h2 {
                   margin: 0;
                   font-size: 14px;
-                  font-weight: bold;
                   color: #14171a;
                 }
                 .report-header p {
@@ -134,9 +141,6 @@ jobs:
                 }
                 .content {
                   padding: 10px 12px;
-                  color: #14171a;
-                  font-size: 12px;
-                  line-height: 1.5;
                 }
                 .status-box {
                   margin: 10px 0;
@@ -144,34 +148,19 @@ jobs:
                   background: #f1f8ff;
                   border-left: 3px solid #1da1f2;
                   border-radius: 8px;
-                  font-size: 12px;
-                }
-                .buttons {
-                  text-align: center;
-                  margin: 12px 0;
                 }
                 .btn {
                   display: inline-block;
-                  padding: 3px 90px;
+                  padding: 6px 20px;
                   margin: 4px;
                   text-decoration: none;
                   color: white;
                   border-radius: 20px;
-                  font-size: 12px;
                   font-weight: bold;
                 }
-                .btn-blue {
-                  background-color: #657786;
-                  padding: 3px 87px;
-                }
-                .btn-red {
-                  background-color: red;
-                  padding: 3px 94px;
-                }
-                .btn-gray {
-                  background-color: #1da1f2;
-                  padding: 3px 80px;
-                }
+                .btn-blue { background-color: #657786; }
+                .btn-red { background-color: red; }
+                .btn-gray { background-color: #1da1f2; }
                 .footer {
                   text-align: center;
                   padding: 6px;
@@ -183,8 +172,7 @@ jobs:
             </head>
             <body>
               <div class="container">
-                <img src="https://images.unsplash.com/photo-1557989048-03456d01a26e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MzB8fGNsYXNzJTIwYXR0ZW5kZW5jZSUyMHJlcG9ydHxlbnwwfHwwfHx8MA%3D%3D"
-                     alt="Attendance" class="header-img">
+                <img class="header-img" src="https://images.unsplash.com/photo-1557989048-03456d01a26e?w=600&auto=format&fit=crop&q=60" alt="Attendance">
 
                 <div class="report-header">
                   <h2>Daily Attendance Scraper Report</h2>
@@ -192,8 +180,8 @@ jobs:
                 </div>
 
                 <div class="content">
-                  <strong>Hello Nikki 👋,</strong>
-                  <p>The Selenium scraper has finished running.</p>
+                  <p><strong>Hello Nikki 👋,</strong><br>
+                  The Selenium scraper has finished running.</p>
 
                   <div class="status-box">
                     📌 <strong>Status:</strong> <b>${{ job.status }}</b><br>
@@ -201,20 +189,13 @@ jobs:
                   </div>
 
                   <p>📄 Click below to view:</p>
+                  <p>
+                    <a href="https://docs.google.com/spreadsheets/d/168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA/edit?gid=728086314#gid=728086314" class="btn btn-blue">📖 Open Sheet</a><br>
+                    <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" class="btn btn-red">📜 View Logs</a><br>
+                    <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" class="btn btn-gray">🔄 Retry Workflow</a>
+                  </p>
 
-                  <div class="buttons">
-                    <a href="https://docs.google.com/spreadsheets/d/168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA/edit?gid=728086314#gid=728086314"
-                       class="btn btn-blue">📖 Open Sheet</a><br>
-
-                    <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                       class="btn btn-red">📜 View Logs</a><br>
-
-                    <a href="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                       class="btn btn-gray">🔄 Retry Workflow</a>
-                  </div>
-
-                  <p>Keep track easily! 🚀</p>
-                  <p>Cheers,<br>Automation Bot 🤖</p>
+                  <p>Keep track easily! 🚀<br>Cheers,<br>Automation Bot 🤖</p>
                 </div>
 
                 <div class="footer">
