@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 # === CONFIG ===
 SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
 MAX_ATTEMPTS = 3
-MAX_THREADS = 15
+MAX_THREADS = 2
 BASE_PREFIX = "237Z1A05"  # ✅ Correct prefix
 
 # === Google Sheets Setup ===
