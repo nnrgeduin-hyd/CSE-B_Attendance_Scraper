@@ -13,7 +13,7 @@ from zoneinfo import ZoneInfo
 # === CONFIG ===
 SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
 MAX_ATTEMPTS = 3
-MAX_THREADS = 2
+MAX_THREADS = 15
 BASE_PREFIX = "237Z1A05"  # ✅ Correct prefix
 
 # === Google Sheets Setup ===
@@ -66,7 +66,7 @@ def process_roll(rollP):
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
             driver = webdriver.Chrome(options=chrome_options)
-            driver.set_page_load_timeout(50)
+            driver.set_page_load_timeout(40)
             wait = WebDriverWait(driver, 5)
 
             driver.get("https://exams-nnrg.in/BeeSERP/Login.aspx")
