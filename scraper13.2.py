@@ -16,6 +16,7 @@ import json
 SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
 MAX_ATTEMPTS = 3
 MAX_THREADS = 10
+BATCH_SIZE = 10
 BASE_PREFIX = "237Z1A05"
 CREDENTIAL_FILES = [f"credentials{i}.json" for i in range(1, 15)]
 CURRENT_CRED_INDEX = 0
@@ -32,6 +33,23 @@ SUBJECT_ALIASES = {
     "CN LAB": "CN LAB", "DEVOPS LAB": "DEVOPS LAB", "ACS LAB": "ACS LAB", "IPR": "IPR",
     "SPORTS": "SPORTS", "MEN": "MENTORING", "ASSOC": "ASSOCIATION", "ASSOCIATION": "ASSOCIATION",
     "LIB": "LIBRARY", "LIBRARY": "LIBRARY"
+}
+
+# === ATTENDED CLASSES RANGES ===
+SUBJECT_RANGES = {
+    "DAA": "F27:F91",
+    "CN": "H27:H91",
+    "DEVOPS": "J27:J91",
+    "PPL": "L27:L91",
+    "NLP": "N27:N91",
+    "CN LAB": "P27:P91",
+    "DEVOPS LAB": "R27:R91",
+    "ACS LAB": "T27:T91",
+    "IPR": "V27:V91",
+    "SPORTS": "X27:V91",
+    "MENTORING": "Z27:Z91",
+    "ASSOCIATION": "AB27:AB91",
+    "LIBRARY": "AD27:AD91"
 }
 
 # === SETUP GOOGLE SHEETS ===
@@ -57,7 +75,7 @@ class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)"
 
 # === CLEAR RANGES IN CLASS SHEET ===
 def clear_attendance_sheet():
-    global client, sheets, class_sheet  # Declare globals at the start
+    global client, sheets, class_sheet
     ranges = [
         "D8:D20", "J8:J20", "F27:F91", "H27:H91", "J27:J91", "L27:L91",
         "N27:N91", "P27:P91", "R27:R91", "T27:T91", "V27:V91", "X27:X91",
@@ -147,13 +165,13 @@ def extract_classes_held(rollP):
         except:
             pass
 
-# === SCRAPE ONE ROLL ===
-def process_roll(rollP):
+# === SCRAPE ATTENDANCE ===
+def scrape_attendance(rollP):
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
             driver = webdriver.Chrome(options=chrome_options)
-            driver.set_page_load_timeout(30)  # Increased from 10 to 30 seconds
-            wait = WebDriverWait(driver, 15)  # Increased from 5 to 15 seconds
+            driver.set_page_load_timeout(40)
+            wait = WebDriverWait(driver, 15)
 
             driver.get("https://exams-nnrg.in/BeeSERP/Login.aspx")
             wait.until(EC.presence_of_element_located((By.ID, "txtUserName"))).send_keys(rollP)
@@ -161,24 +179,26 @@ def process_roll(rollP):
             wait.until(EC.presence_of_element_located((By.ID, "txtPassword"))).send_keys(rollP)
             driver.find_element(By.ID, "btnSubmit").click()
             wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Click Here to go Student Dashbord"))).click()
-            wait.until(EC.presence_of_element_located((By.ID, "ctl00_cpStud_lblTotalPercentage")))
 
+            wait.until(EC.presence_of_element_located((By.ID, "ctl00_cpStud_lblTotalPercentage")))
             overall = driver.find_element(By.ID, "ctl00_cpStud_lblTotalPercentage").text.strip()
-            table = driver.find_element(By.ID, "ctl00_cpStud_grdSubject")
-            rows = table.find_elements(By.TAG_NAME, "tr")[1:]
-            data = {"Overall %": overall}
-            for r in rows:
-                cols = r.find_elements(By.TAG_NAME, "td")
+            rows = driver.find_element(By.ID, "ctl00_cpStud_grdSubject").find_elements(By.TAG_NAME, "tr")[1:]
+
+            data = {"Overall %": {"percentage": overall, "attended": None}}
+            for row in rows:
+                cols = row.find_elements(By.TAG_NAME, "td")
                 if len(cols) < 6:
                     continue
-                subject = cols[1].text.upper().split(":")[0].strip()
-                percent = cols[5].text.strip()
-                key = SUBJECT_ALIASES.get(subject)
-                if key and percent and percent != "&nbsp;":
-                    data[key] = percent
+                subject_name = cols[1].text.upper().split(":")[0].strip()
+                key = SUBJECT_ALIASES.get(subject_name)
+                if key and key in SUBJECT_SHEETS:
+                    percentage = cols[5].text.strip() if cols[5].text.strip() != "&nbsp;" else "0"
+                    attended = cols[4].text.strip() if cols[4].text.strip() != "&nbsp;" else "0"
+                    data[key] = {"percentage": percentage, "attended": attended}
+
             return (rollP[:-1], data)
         except Exception as e:
-            print(f"⚠️ Attempt {attempt} failed for {rollP} — {e}")
+            print(f"⚠️ Attempt {attempt} failed for {rollP}: {e}")
             time.sleep(0.5)
         finally:
             try:
@@ -242,16 +262,17 @@ def run_parallel_scraping():
             raise e
 
     with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
-        futures = {executor.submit(process_roll, r): r for r in roll_with_p}
+        futures = {executor.submit(scrape_attendance, r): r for r in roll_with_p}
         for f in as_completed(futures):
             roll, data = f.result()
             if not data:
                 continue
-            for subject, val in data.items():
+            for subject, values in data.items():
                 if roll in roll_to_row.get(subject, {}):
                     row = roll_to_row[subject][roll]
                     col = col_index[subject]
-                    val = val if subject == "Overall %" else val + " %"
+                    percentage = values["percentage"]
+                    val = percentage if subject == "Overall %" else percentage + " %"
                     try:
                         sheets[subject].update_cell(row, col, val)
                         print(f"✅ Updated {subject} → {roll}: {val}")
@@ -267,6 +288,26 @@ def run_parallel_scraping():
                             print(f"❌ Error writing to {subject} for {roll}: {e}")
                 else:
                     print(f"⚠️ Roll {roll} not found in sheet: {subject}")
+
+                # Update attended classes in class_sheet
+                if subject in SUBJECT_RANGES and values["attended"] and roll in roll_to_row.get(subject, {}):
+                    row = roll_to_row[subject][roll]
+                    attended = values["attended"]
+                    range_start_col = SUBJECT_RANGES[subject].split(":")[0][0]
+                    col_num = ord(range_start_col) - ord('A') + 1
+                    try:
+                        class_sheet.update_cell(row, col_num, attended)
+                        print(f"✅ Updated {subject} attended → {roll}: {attended} in {SUBJECT_RANGES[subject]}")
+                    except gspread.exceptions.APIError as e:
+                        if e.response.status_code == 429:
+                            print("⚠️ Rate limit hit, switching credentials...")
+                            client = switch_credentials()
+                            sheets = {name: client.open_by_key(SHEET_ID).worksheet(name) for name in SUBJECT_SHEETS}
+                            class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
+                            class_sheet.update_cell(row, col_num, attended)
+                            print(f"✅ Updated {subject} attended → {roll}: {attended} in {SUBJECT_RANGES[subject]}")
+                        else:
+                            print(f"❌ Error writing attended to {subject} for {roll}: {e}")
 
 if __name__ == "__main__":
     run_parallel_scraping()
