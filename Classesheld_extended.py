@@ -61,13 +61,11 @@ def extract_classes_held(rollP):
 def main():
     # → Classes Held for 237Z1A0572
     held_72 = extract_classes_held("237Z1A0572P")
-    time.sleep(2)
     class_sheet.update("D8:D20", [[v] for v in held_72])
     print("✅ Inserted Classes Held from 72 into D8:D20")
 
     # → Classes Held for 237Z1A05A8
     held_a8 = extract_classes_held("237Z1A05A8P")
-    time.sleep(2)
     class_sheet.update("J8:J20", [[v] for v in held_a8])
     print("✅ Inserted Classes Held from A8 into J8:J20")
 
