@@ -15,7 +15,7 @@ SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
 CREDENTIAL_FILE = "credentials12.json"
 MAX_ATTEMPTS = 3
 BASE_PREFIX = "237Z1A05"
-THREADS = 2
+THREADS = 15
 BATCH_SIZE = THREADS
 
 # === Google Sheets Setup ===
@@ -69,7 +69,7 @@ def scrape_attendance(rollP):
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
             driver = webdriver.Chrome(options=chrome_options)
-            driver.set_page_load_timeout(50)
+            driver.set_page_load_timeout(40)
             wait = WebDriverWait(driver, 5)
 
             driver.get("https://exams-nnrg.in/BeeSERP/Login.aspx")
