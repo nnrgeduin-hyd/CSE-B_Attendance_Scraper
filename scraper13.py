@@ -15,10 +15,10 @@ import json
 # === CONFIG ===
 SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
 MAX_ATTEMPTS = 3
-MAX_THREADS = 10  # Increased for better parallelism
+MAX_THREADS = 10
 BASE_PREFIX = "237Z1A05"
-CREDENTIAL_FILES = [f"credentials{i}.json" for i in range(1, 15)]  # List of credential files
-CURRENT_CRED_INDEX = 0  # Track current credential file
+CREDENTIAL_FILES = [f"credentials{i}.json" for i in range(1, 15)]
+CURRENT_CRED_INDEX = 0
 
 SUBJECT_SHEETS = [
     "Overall %", "CN", "DEVOPS", "PPL", "NLP", "DAA",
@@ -30,7 +30,7 @@ SUBJECT_SHEETS = [
 SUBJECT_ALIASES = {
     "CN": "CN", "DEVOPS": "DEVOPS", "PPL": "PPL", "NLP": "NLP", "DAA": "DAA",
     "CN LAB": "CN LAB", "DEVOPS LAB": "DEVOPS LAB", "ACS LAB": "ACS LAB", "IPR": "IPR",
-    "SPORTS": "SPORTS", "MEN": "MENTORING", "ASSOC": "Association", "ASSOCIATION": "Association",
+    "SPORTS": "Sports", "MEN": "Mentoring", "ASSOC": "Association", "ASSOCIATION": "Association",
     "LIB": "Library", "LIBRARY": "Library"
 }
 
@@ -38,7 +38,6 @@ SUBJECT_ALIASES = {
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
 def get_gspread_client():
-    global CURRENT_CRED_INDEX
     cred_file = CREDENTIAL_FILES[CURRENT_CRED_INDEX]
     if not os.path.exists(cred_file):
         raise FileNotFoundError(f"Credential file {cred_file} not found")
@@ -56,20 +55,9 @@ client = get_gspread_client()
 sheets = {name: client.open_by_key(SHEET_ID).worksheet(name) for name in SUBJECT_SHEETS}
 class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
 
-# === CHROME OPTIONS ===
-chrome_options = webdriver.ChromeOptions()
-chrome_options.add_argument("--headless=new")
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--disable-notifications")
-chrome_options.add_argument("--log-level=3")
-chrome_options.add_argument("--window-size=1280,800")
-chrome_path = which("chromium-browser")
-if chrome_path:
-    chrome_options.binary_location = chrome_path
-
 # === CLEAR RANGES IN CLASS SHEET ===
 def clear_attendance_sheet():
+    global client, sheets, class_sheet  # Declare globals at the start
     ranges = [
         "D8:D20", "J8:J20", "F27:F91", "H27:H91", "J27:J91", "L27:L91",
         "N27:N91", "P27:P91", "R27:P91", "T27:T91", "V27:V91", "X27:X91",
@@ -82,11 +70,12 @@ def clear_attendance_sheet():
     except gspread.exceptions.APIError as e:
         if e.response.status_code == 429:
             print("⚠️ Rate limit hit, switching credentials...")
-            global client, sheets, class_sheet
             client = switch_credentials()
             sheets = {name: client.open_by_key(SHEET_ID).worksheet(name) for name in SUBJECT_SHEETS}
             class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
             clear_attendance_sheet()  # Retry with new credentials
+        else:
+            raise e
 
 # === ROLL NUMBERS ===
 def generate_roll_numbers():
@@ -96,6 +85,7 @@ def generate_roll_numbers():
 
 # === ADD COLUMN ===
 def prepare_new_column(sheet):
+    global client, sheets, class_sheet
     ist_time = datetime.now(ZoneInfo("Asia/Kolkata"))
     timestamp = ist_time.strftime("%Y-%m-%d %I:%M %p")
     try:
@@ -105,25 +95,28 @@ def prepare_new_column(sheet):
     except gspread.exceptions.APIError as e:
         if e.response.status_code == 429:
             print("⚠️ Rate limit hit, switching credentials...")
-            global client, sheets, class_sheet
             client = switch_credentials()
             sheets = {name: client.open_by_key(SHEET_ID).worksheet(name) for name in SUBJECT_SHEETS}
             class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
-            return prepare_new_column(sheet)  # Retry with new credentials
+            return prepare_new_column(sheet)  # Retry
+        else:
+            raise e
 
 # === ROLL MAPPING ===
 def get_roll_row_mapping(sheet):
+    global client, sheets, class_sheet
     try:
         all_rows = sheet.get_all_values()
         return {row[0].strip(): idx for idx, row in enumerate(all_rows[10:], start=11) if row and row[0].strip()}
     except gspread.exceptions.APIError as e:
         if e.response.status_code == 429:
             print("⚠️ Rate limit hit, switching credentials...")
-            global client, sheets, class_sheet
             client = switch_credentials()
             sheets = {name: client.open_by_key(SHEET_ID).worksheet(name) for name in SUBJECT_SHEETS}
             class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
-            return get_roll_row_mapping(sheet)  # Retry with new credentials
+            return get_roll_row_mapping(sheet)  # Retry
+        else:
+            raise e
 
 # === CLASSES HELD FOR ONE ROLL ===
 def extract_classes_held(rollP):
@@ -144,7 +137,7 @@ def extract_classes_held(rollP):
             cols = r.find_elements(By.TAG_NAME, "td")
             if len(cols) >= 4:
                 held.append(cols[3].text.strip() or "0")
-        return held + ["0"] * (13 - len(held))  # Pad to 13
+        return held + ["0"] * (13 - len(held))
     except Exception as e:
         print(f"❌ Error fetching classes held for {rollP}: {e}")
         return ["0"] * 13
@@ -195,8 +188,21 @@ def process_roll(rollP):
     print(f"❌ Failed to scrape {rollP}")
     return (rollP[:-1], {})
 
+# === CHROME OPTIONS ===
+chrome_options = webdriver.ChromeOptions()
+chrome_options.add_argument("--headless=new")
+chrome_options.add_argument("--no-sandbox")
+chrome_options.add_argument("--disable-dev-shm-usage")
+chrome_options.add_argument("--disable-notifications")
+chrome_options.add_argument("--log-level=3")
+chrome_options.add_argument("--window-size=1280,800")
+chrome_path = which("chromium-browser")
+if chrome_path:
+    chrome_options.binary_location = chrome_path
+
 # === MAIN ===
 def run_parallel_scraping():
+    global client, sheets, class_sheet
     clear_attendance_sheet()
     rolls = generate_roll_numbers()
     roll_with_p = [r + "P" for r in rolls]
@@ -211,12 +217,13 @@ def run_parallel_scraping():
     except gspread.exceptions.APIError as e:
         if e.response.status_code == 429:
             print("⚠️ Rate limit hit, switching credentials...")
-            global client, sheets, class_sheet
             client = switch_credentials()
             sheets = {name: client.open_by_key(SHEET_ID).worksheet(name) for name in SUBJECT_SHEETS}
             class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
             class_sheet.update("D8:D20", [[v] for v in held_72])
             print("✅ Inserted Classes Held from 72 into D8:D20")
+        else:
+            raise e
 
     # → Classes Held for 237Z1A05A8
     held_a8 = extract_classes_held("237Z1A05A8P")
@@ -226,12 +233,13 @@ def run_parallel_scraping():
     except gspread.exceptions.APIError as e:
         if e.response.status_code == 429:
             print("⚠️ Rate limit hit, switching credentials...")
-            global client, sheets, class_sheet
             client = switch_credentials()
             sheets = {name: client.open_by_key(SHEET_ID).worksheet(name) for name in SUBJECT_SHEETS}
             class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
             class_sheet.update("J8:J20", [[v] for v in held_a8])
             print("✅ Inserted Classes Held from A8 into J8:J20")
+        else:
+            raise e
 
     with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         futures = {executor.submit(process_roll, r): r for r in roll_with_p}
@@ -250,7 +258,6 @@ def run_parallel_scraping():
                     except gspread.exceptions.APIError as e:
                         if e.response.status_code == 429:
                             print("⚠️ Rate limit hit, switching credentials...")
-                            global client, sheets, class_sheet
                             client = switch_credentials()
                             sheets = {name: client.open_by_key(SHEET_ID).worksheet(name) for name in SUBJECT_SHEETS}
                             class_sheet = client.open_by_key(SHEET_ID).worksheet("Attendence CSE-B(2023-27)")
