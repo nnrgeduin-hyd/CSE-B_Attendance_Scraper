@@ -19,7 +19,7 @@ BASE_PREFIX = "237Z1A05"
 SUBJECT_SHEETS = [
     "Overall %", "CN", "DEVOPS", "PPL", "NLP", "DAA",
     "CN LAB", "DEVOPS LAB", "ACS LAB", "IPR",
-    "Sports", "Men", "Association", "Library"
+    "SPORTS", "MENTORING", "ASSOCIATION", "LIBRARY"
 ]
 
 # === SUBJECT NAME NORMALIZATION ===
