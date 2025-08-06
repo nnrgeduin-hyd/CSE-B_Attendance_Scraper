@@ -92,6 +92,12 @@ def clear_attendance_sheet():
         print("🧹 Cleared Attendence CSE-B(2023-27) ranges.")
     return retry_with_all_credentials(do_clear, operation_name="clear_attendance_sheet")
 
+# === ROLL NUMBERS ===
+def generate_roll_numbers():
+    rolls = [BASE_PREFIX + str(n) for n in range(72, 100) if str(n) not in ["80", "88"]]
+    rolls += [BASE_PREFIX + f"{l}{d}" for l in "ABCD" for d in range(10)]
+    return rolls
+
 # === ADD COLUMN ===
 def prepare_new_column(sheet):
     def do_prepare():
