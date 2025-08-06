@@ -1,4 +1,4 @@
-name: Daily Selenium Scraper Extended
+name: Daily Selenium Scraper Extended 
 
 on:
   schedule:
@@ -28,11 +28,11 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install Chromium and Chromedriver (Fast Method)
+      - name: Install Chromium and Chromedriver (Fast & Compatible with Ubuntu 24.04)
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget unzip xvfb libxi6 libgconf-2-4 libnss3 libxss1 libappindicator1 libindicator7
-          
+          sudo apt-get install -y wget unzip xvfb libxi6 libnss3 libxss1 libindicator7
+
           # Install Chromium
           wget https://storage.googleapis.com/chrome-for-testing-public/122.0.6261.111/linux64/chrome-linux64.zip
           unzip chrome-linux64.zip
@@ -45,7 +45,7 @@ jobs:
           sudo mv chromedriver-linux64/chromedriver /usr/bin/chromedriver
           sudo chmod +x /usr/bin/chromedriver
 
-          # Confirm installations
+          # Confirm
           chromium-browser --version
           chromedriver --version
 
