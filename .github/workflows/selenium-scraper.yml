@@ -17,7 +17,7 @@ jobs:
 
     strategy:
       matrix:
-        subject: [Classesheld_extended.py, Overall_extended.py, DAA_CN_DEVOPS_Merged.py, PPL_extended.py, NLP_extended.py, CN_LAB_extended.py, DEVOPS_LAB_extended.py, ACS_LAB_extended.py, IPR_extended.py, Sports_extended.py, Mentoring_extended.py, Association_extended.py, Library_extended.py]
+        subject: [Classesheld_extended.py, Overall_extended.py, DAA_CN_DEVOPS_Merged1.py, PPL_extended.py, NLP_extended.py, CN_LAB_extended.py, DEVOPS_LAB_extended.py, ACS_LAB_extended.py, IPR_extended.py, Sports_extended.py, Mentoring_extended.py, Association_extended.py, Library_extended.py]
 
     steps:
       - name: Checkout repository
