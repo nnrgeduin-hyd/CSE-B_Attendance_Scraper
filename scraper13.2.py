@@ -158,7 +158,7 @@ def process_roll(roll):
                 if len(cols) >= 6:
                     subject = cols[1].text.upper().split(":")[0].strip()
                     percent = cols[5].text.strip()
-                    attended = cols[3].text.strip()
+                    attended = cols[4].text.strip()
                     key = SUBJECT_ALIASES.get(subject)
                     if key:
                         if percent:
