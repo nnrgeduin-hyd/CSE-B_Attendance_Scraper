@@ -32,6 +32,22 @@ SUBJECT_ALIASES = {
     "LIB": "LIBRARY", "LIBRARY": "LIBRARY"
 }
 
+SUBJECT_ClassesAttended_RANGES = {
+    "DAA": "F27:F91",
+    "CN": "H27:H91",
+    "DEVOPS": "J27:J91",
+    "PPL": "L27:L91",
+    "NLP": "N27:N91",
+    "CN LAB": "P27:P91",
+    "DEVOPS LAB": "R27:R91",
+    "ACS LAB": "T27:T91",
+    "IPR": "V27:V91",
+    "SPORTS": "X27:X91",
+    "MENTORING": "Z27:Z91",
+    "ASSOCIATION": "AB27:AB91",
+    "LIBRARY": "AD27:AD91"
+}
+
 # === GOOGLE SHEETS SETUP ===
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
@@ -96,26 +112,6 @@ def prepare_new_column(sheet):
     safe_call(sheet.update_cell, 10, 3, timestamp)
     return 3
 
-def extract_classes_held(roll):
-    try:
-        driver = webdriver.Chrome(options=chrome_options)
-        wait = WebDriverWait(driver, 10)
-        driver.get("https://exams-nnrg.in/BeeSERP/Login.aspx")
-        wait.until(EC.presence_of_element_located((By.ID, "txtUserName"))).send_keys(roll)
-        driver.find_element(By.ID, "btnNext").click()
-        wait.until(EC.presence_of_element_located((By.ID, "txtPassword"))).send_keys(roll)
-        driver.find_element(By.ID, "btnSubmit").click()
-        wait.until(EC.presence_of_element_located((By.LINK_TEXT, "Click Here to go Student Dashbord"))).click()
-        wait.until(EC.presence_of_element_located((By.ID, "ctl00_cpStud_grdSubject")))
-        rows = driver.find_element(By.ID, "ctl00_cpStud_grdSubject").find_elements(By.TAG_NAME, "tr")[1:-1]
-        held = [r.find_elements(By.TAG_NAME, "td")[3].text.strip() or "0" for r in rows if len(r.find_elements(By.TAG_NAME, "td")) >= 4]
-        return held + ["0"] * (13 - len(held))
-    except:
-        return ["0"] * 13
-    finally:
-        try: driver.quit()
-        except: pass
-
 def process_roll(roll):
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
@@ -162,40 +158,39 @@ def run_fast_scraper():
     global client
     rolls = generate_roll_numbers()
     roll_map = {s: get_roll_row_mapping(sheets[s]) for s in SUBJECT_SHEETS}
-    class_sheet_map = get_roll_row_mapping(class_sheet)
-
     col_index = {s: prepare_new_column(sheets[s]) for s in SUBJECT_SHEETS}
     batched_data = {s: [] for s in SUBJECT_SHEETS}
 
-    print("⏳ Scraping class held...")
-    class_72 = extract_classes_held(rolls[0])
-    class_a8 = extract_classes_held("237Z1A05A8P")
-    safe_call(class_sheet.update, "D8:D20", [[v] for v in class_72])
-    safe_call(class_sheet.update, "J8:J20", [[v] for v in class_a8])
-    print("✅ Inserted class held.")
+    # Clear classes attended ranges
+    for subject, rng in SUBJECT_ClassesAttended_RANGES.items():
+        safe_call(class_sheet.update, rng, [[""] for _ in range(65)])
+
+    attended_updates = {s: [""] * 65 for s in SUBJECT_ClassesAttended_RANGES}
+
+    print("⏳ Scraping and processing students...")
 
     with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         futures = {executor.submit(process_roll, r): r for r in rolls}
         for f in as_completed(futures):
             roll, data, attended_data = f.result()
 
-            # Insert attendance percentage
+            # Insert % into subject sheets
             for subject, val in data.items():
                 if roll in roll_map.get(subject, {}):
                     row = roll_map[subject][roll]
                     col = col_index[subject]
                     batched_data[subject].append((row, col, val if subject == "Overall %" else val + " %"))
 
-            # Insert DAA classes attended into "Attendence CSE-B(2023-27)" sheet (column F)
-            if roll in class_sheet_map and "DAA" in attended_data:
-                row_idx = class_sheet_map[roll]
-                try:
-                    safe_call(class_sheet.update, f"F{row_idx}", attended_data["DAA"])
-                    print(f"✅ Inserted DAA attended for {roll} at F{row_idx}")
-                except Exception as e:
-                    print(f"❌ Failed to insert DAA for {roll}: {e}")
+            # Prepare attended values for "Attendence CSE-B(2023-27)"
+            for subject, attended_val in attended_data.items():
+                if subject in SUBJECT_ClassesAttended_RANGES:
+                    if roll in roll_map.get(subject, {}):
+                        idx = roll_map[subject][roll] - 27
+                        if 0 <= idx < 65:
+                            attended_updates[subject][idx] = attended_val
 
-    print("📝 Writing attendance %...")
+    print("📝 Writing scraped percentage data...")
+
     for subject, updates in batched_data.items():
         if not updates:
             continue
@@ -209,7 +204,15 @@ def run_fast_scraper():
             if (row, col) in cell_map:
                 cell_map[(row, col)].value = val
         safe_call(sheets[subject].update_cells, list(cell_map.values()))
-        print(f"✅ {subject} updated")
+        print(f"✅ {subject} % updated")
+
+    print("📊 Writing attended class data to Attendence CSE-B(2023-27)...")
+
+    for subject, values in attended_updates.items():
+        rng = SUBJECT_ClassesAttended_RANGES[subject]
+        values_2d = [[v] for v in values]
+        safe_call(class_sheet.update, rng, values_2d)
+        print(f"✅ {subject} attended inserted in range {rng}")
 
 if __name__ == "__main__":
     run_fast_scraper()
