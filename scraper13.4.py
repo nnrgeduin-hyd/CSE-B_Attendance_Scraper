@@ -11,8 +11,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-# === CONFIG ===
-SHEET_ID = "168dU0XLrRkVZQquAStktg_X9pMi3Vx9o9fOmbUYOUvA"
+# === CONFIGURATION ===
+SHEET_ID = "168dU0XLrRkVZQquAStktg_X9fMi3Vx9o9fOmbUYOUvA"
 BASE_PREFIX = "237Z1A05"
 CREDENTIAL_FILES = [f"credentials{i}.json" for i in range(1, 15)]
 CURRENT_CRED_INDEX = 0
@@ -33,19 +33,10 @@ SUBJECT_ALIASES = {
 }
 
 SUBJECT_ClassesAttended_RANGES = {
-    "DAA": "F27:F91",
-    "CN": "H27:H91",
-    "DEVOPS": "J27:J91",
-    "PPL": "L27:L91",
-    "NLP": "N27:N91",
-    "CN LAB": "P27:P91",
-    "DEVOPS LAB": "R27:R91",
-    "ACS LAB": "T27:T91",
-    "IPR": "V27:V91",
-    "SPORTS": "X27:X91",
-    "MENTORING": "Z27:Z91",
-    "ASSOCIATION": "AB27:AB91",
-    "LIBRARY": "AD27:AD91"
+    "DAA": "F27:F91", "CN": "H27:H91", "DEVOPS": "J27:J91", "PPL": "L27:L91",
+    "NLP": "N27:N91", "CN LAB": "P27:P91", "DEVOPS LAB": "R27:R91",
+    "ACS LAB": "T27:T91", "IPR": "V27:V91", "SPORTS": "X27:X91",
+    "MENTORING": "Z27:Z91", "ASSOCIATION": "AB27:AB91", "LIBRARY": "AD27:AD91"
 }
 
 # === GOOGLE SHEETS SETUP ===
@@ -59,7 +50,6 @@ def get_gspread_client():
 def switch_credentials():
     global CURRENT_CRED_INDEX
     CURRENT_CRED_INDEX = (CURRENT_CRED_INDEX + 1) % len(CREDENTIAL_FILES)
-    print(f"🔄 Switched to credential file: {CREDENTIAL_FILES[CURRENT_CRED_INDEX]}")
     return get_gspread_client()
 
 def safe_call(func, *args, **kwargs):
@@ -69,7 +59,6 @@ def safe_call(func, *args, **kwargs):
             return func(*args, **kwargs)
         except gspread.exceptions.APIError as e:
             if e.response.status_code == 429:
-                print("⚠️ Rate limit. Switching creds...")
                 client = switch_credentials()
                 refresh_sheets()
             else:
@@ -84,7 +73,7 @@ def refresh_sheets():
 client = get_gspread_client()
 refresh_sheets()
 
-# === SELENIUM SETUP ===
+# === SELENIUM CONFIGURATION ===
 chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--headless=new")
 chrome_options.add_argument("--no-sandbox")
@@ -96,6 +85,7 @@ chrome_path = which("chromium-browser")
 if chrome_path:
     chrome_options.binary_location = chrome_path
 
+# === UTILITY FUNCTIONS ===
 def generate_roll_numbers():
     rolls = [BASE_PREFIX + str(n) for n in range(72, 100) if str(n) not in ["80", "88"]]
     rolls += [BASE_PREFIX + f"{l}{d}" for l in "ABCD" for d in range(10)]
@@ -111,6 +101,14 @@ def prepare_new_column(sheet):
     safe_call(sheet.update_cell, 10, 3, timestamp)
     return 3
 
+def col_letter(n):
+    result = ""
+    while n:
+        n, r = divmod(n - 1, 26)
+        result = chr(65 + r) + result
+    return result
+
+# === DATA SCRAPING ===
 def extract_classes_held(roll):
     try:
         driver = webdriver.Chrome(options=chrome_options)
@@ -132,10 +130,9 @@ def extract_classes_held(roll):
         except: pass
 
 def process_roll(roll):
-    for attempt in range(1, MAX_ATTEMPTS + 1):
+    for _ in range(MAX_ATTEMPTS):
         try:
             driver = webdriver.Chrome(options=chrome_options)
-            driver.set_page_load_timeout(10)
             wait = WebDriverWait(driver, 5)
             driver.get("https://exams-nnrg.in/BeeSERP/Login.aspx")
             wait.until(EC.presence_of_element_located((By.ID, "txtUserName"))).send_keys(roll)
@@ -172,24 +169,20 @@ def process_roll(roll):
             except: pass
     return (roll[:-1], {}, {})
 
+# === MAIN FUNCTION ===
 def run_fast_scraper():
-    global client
     rolls = generate_roll_numbers()
     roll_map = {s: get_roll_row_mapping(sheets[s]) for s in SUBJECT_SHEETS}
     class_roll_map = get_roll_row_mapping(class_sheet)
-
     col_index = {s: prepare_new_column(sheets[s]) for s in SUBJECT_SHEETS}
-    batched_data = {s: [] for s in SUBJECT_SHEETS}
+    batched_data = {s: {} for s in SUBJECT_SHEETS}
     attended_updates = {s: [""] * 65 for s in SUBJECT_ClassesAttended_RANGES}
 
-    # Clear and insert classes held
     for subject, rng in SUBJECT_ClassesAttended_RANGES.items():
         safe_call(class_sheet.update, rng, [[""] for _ in range(65)])
 
-    class_72 = extract_classes_held("237Z1A0572")
-    class_a8 = extract_classes_held("237Z1A05A8")
-    safe_call(class_sheet.update, "D8:D20", [[v] for v in class_72])
-    safe_call(class_sheet.update, "J8:J20", [[v] for v in class_a8])
+    safe_call(class_sheet.update, "D8:D20", [[v] for v in extract_classes_held("237Z1A0572")])
+    safe_call(class_sheet.update, "J8:J20", [[v] for v in extract_classes_held("237Z1A05A8")])
 
     with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
         futures = {executor.submit(process_roll, r): r for r in rolls}
@@ -198,29 +191,29 @@ def run_fast_scraper():
             for subject, val in data.items():
                 if roll in roll_map.get(subject, {}):
                     row = roll_map[subject][roll]
-                    col = col_index[subject]
-                    batched_data[subject].append((row, col, val + " %"))
+                    batched_data[subject][row] = val + " %"
             for subject, val in attended_data.items():
                 if subject in SUBJECT_ClassesAttended_RANGES and roll in class_roll_map:
                     idx = class_roll_map[roll] - 27
                     if 0 <= idx < 65:
                         attended_updates[subject][idx] = val
 
-    for subject, updates in batched_data.items():
-        if updates:
-            col = col_index[subject]
-            grouped = {r: v for r, _, v in updates}
-            min_row = min(grouped)
-            max_row = max(grouped)
-            cells = safe_call(sheets[subject].range, f"{chr(64+col)}{min_row}:{chr(64+col)}{max_row}")
-            for cell in cells:
-                if cell.row in grouped:
-                    cell.value = grouped[cell.row]
-            safe_call(sheets[subject].update_cells, cells)
+    for subject, row_data in batched_data.items():
+        if not row_data:
+            continue
+        sheet = sheets[subject]
+        col = col_index[subject]
+        min_row = min(row_data)
+        max_row = max(row_data)
+        cell_range = f"{col_letter(col)}{min_row}:{col_letter(col)}{max_row}"
+        cells = safe_call(sheet.range, cell_range)
+        for cell in cells:
+            if cell.row in row_data:
+                cell.value = row_data[cell.row]
+        safe_call(sheet.update_cells, cells)
 
     for subject, values in attended_updates.items():
         safe_call(class_sheet.update, SUBJECT_ClassesAttended_RANGES[subject], [[v] for v in values])
 
-# 👉 Run the scraper
-if __name__ == "__main__":
-    run_fast_scraper()
+# ✅ Run
+run_fast_scraper()
