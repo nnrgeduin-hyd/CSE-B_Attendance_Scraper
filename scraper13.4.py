@@ -3,7 +3,6 @@ import time
 import gspread
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from shutil import which
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from oauth2client.service_account import ServiceAccountCredentials
 from selenium import webdriver
@@ -12,11 +11,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # === CONFIGURATION ===
-SHEET_ID = "168dU0XLrRkVZQquAStktg_X9fMi3Vx9o9fOmbUYOUvA"
+SHEET_ID = "168dU0XLrRkVZQquAStktg_X9fMi3Vx9o9fOmbUYOUvA"  # <-- Ensure this is correct
 BASE_PREFIX = "237Z1A05"
 CREDENTIAL_FILES = [f"credentials{i}.json" for i in range(1, 15)]
 CURRENT_CRED_INDEX = 0
-MAX_ATTEMPTS = 3
 MAX_THREADS = 8
 
 SUBJECT_SHEETS = [
@@ -28,8 +26,9 @@ SUBJECT_SHEETS = [
 SUBJECT_ALIASES = {
     "CN": "CN", "DEVOPS": "DEVOPS", "PPL": "PPL", "NLP": "NLP", "DAA": "DAA",
     "CN LAB": "CN LAB", "DEVOPS LAB": "DEVOPS LAB", "ACS LAB": "ACS LAB", "IPR": "IPR",
-    "SPORTS": "SPORTS", "MENTORING": "MENTORING", "ASSOCIATION": "ASSOCIATION", "ASSOCIATION": "ASSOCIATION",
-    "LIBRARY": "LIBRARY", "LIBRARY": "LIBRARY"
+    "SPORTS": "SPORTS", "MEN": "MENTORING", "MENTORING": "MENTORING",
+    "ASSOC": "ASSOCIATION", "ASSOCIATION": "ASSOCIATION",
+    "LIB": "LIBRARY", "LIBRARY": "LIBRARY"
 }
 
 SUBJECT_ClassesAttended_RANGES = {
@@ -43,26 +42,24 @@ SUBJECT_ClassesAttended_RANGES = {
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
 def get_gspread_client():
-    cred_file = CREDENTIAL_FILES[CURRENT_CRED_INDEX]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(cred_file, scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIAL_FILES[CURRENT_CRED_INDEX], scope)
     return gspread.authorize(creds)
 
 def switch_credentials():
-    global CURRENT_CRED_INDEX
+    global CURRENT_CRED_INDEX, client
     CURRENT_CRED_INDEX = (CURRENT_CRED_INDEX + 1) % len(CREDENTIAL_FILES)
-    return get_gspread_client()
+    client = get_gspread_client()
+    refresh_sheets()
 
 def safe_call(func, *args, **kwargs):
-    global client
     for _ in range(len(CREDENTIAL_FILES)):
         try:
             return func(*args, **kwargs)
         except gspread.exceptions.APIError as e:
             if e.response.status_code == 429:
-                client = switch_credentials()
-                refresh_sheets()
+                switch_credentials()
             else:
-                raise e
+                raise
     raise RuntimeError("All credentials exhausted.")
 
 def refresh_sheets():
@@ -78,12 +75,7 @@ chrome_options = webdriver.ChromeOptions()
 chrome_options.add_argument("--headless=new")
 chrome_options.add_argument("--no-sandbox")
 chrome_options.add_argument("--disable-dev-shm-usage")
-chrome_options.add_argument("--disable-notifications")
-chrome_options.add_argument("--log-level=3")
 chrome_options.add_argument("--window-size=1280,800")
-chrome_path = which("chromium-browser")
-if chrome_path:
-    chrome_options.binary_location = chrome_path
 
 # === UTILITY FUNCTIONS ===
 def generate_roll_numbers():
@@ -108,7 +100,7 @@ def col_letter(n):
         result = chr(65 + r) + result
     return result
 
-# === DATA SCRAPING ===
+# === SCRAPER ===
 def extract_classes_held(roll):
     try:
         driver = webdriver.Chrome(options=chrome_options)
@@ -130,7 +122,7 @@ def extract_classes_held(roll):
         except: pass
 
 def process_roll(roll):
-    for _ in range(MAX_ATTEMPTS):
+    for _ in range(3):
         try:
             driver = webdriver.Chrome(options=chrome_options)
             wait = WebDriverWait(driver, 5)
@@ -156,10 +148,8 @@ def process_roll(roll):
                     attended = cols[4].text.strip()
                     key = SUBJECT_ALIASES.get(subject)
                     if key:
-                        if percent:
-                            data[key] = percent
-                        if attended:
-                            attended_data[key] = attended
+                        data[key] = percent
+                        attended_data[key] = attended
 
             return (roll[:-1], data, attended_data)
         except:
@@ -170,7 +160,7 @@ def process_roll(roll):
     return (roll[:-1], {}, {})
 
 # === MAIN FUNCTION ===
-def run_fast_scraper():
+def run_scraper():
     rolls = generate_roll_numbers()
     roll_map = {s: get_roll_row_mapping(sheets[s]) for s in SUBJECT_SHEETS}
     class_roll_map = get_roll_row_mapping(class_sheet)
@@ -215,5 +205,5 @@ def run_fast_scraper():
     for subject, values in attended_updates.items():
         safe_call(class_sheet.update, SUBJECT_ClassesAttended_RANGES[subject], [[v] for v in values])
 
-# ✅ Run
-run_fast_scraper()
+# ✅ Run the scraper
+run_scraper()
