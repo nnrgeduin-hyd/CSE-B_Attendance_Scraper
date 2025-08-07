@@ -43,9 +43,9 @@ SUBJECT_ClassesAttended_RANGES = {
     "ACS LAB": "T27:T91",
     "IPR": "V27:V91",
     "SPORTS": "X27:X91",
-    "MENTORING": "Z27:Z91",
+    "NPTEL": "Z27:Z91",
     "ASSOCIATION": "AB27:AB91",
-    "LIBRARY": "AD27:AD91"
+    "LIB/MEN": "AD27:AD91"
 }
 
 # === GOOGLE SHEETS SETUP ===
