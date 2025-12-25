@@ -20,24 +20,24 @@ MAX_ATTEMPTS = 3
 MAX_THREADS = 8
 
 SUBJECT_SHEETS = [
-    "Overall %", "CN", "DEVOPS", "PPL", "NLP", "DAA",
+    "Overall %", "FLAT", "AI", "IOT", "RP", "ML",
     "CN LAB", "DEVOPS LAB", "ACS LAB", "IPR",
     "SPORTS", "NPTEL", "ASSOCIATION", "LIB/MEN"
 ]
 
 SUBJECT_ALIASES = {
-    "CN": "CN", "DEVOPS": "DEVOPS", "PPL": "PPL", "NLP": "NLP", "DAA": "DAA",
+    "FLAT": "FLAT", "AI": "AI", "IOT": "IOT", "RP": "RP", "ML": "ML",
     "CN LAB": "CN LAB", "DEVOPS LAB": "DEVOPS LAB", "ACS LAB": "ACS LAB", "IPR": "IPR",
     "SPORTS": "SPORTS", "NPTEL": "NPTEL", "ASSOC": "ASSOCIATION", "ASSOCIATION": "ASSOCIATION",
     "LIB/MEN": "LIB/MEN", "LIB/MEN": "LIB/MEN"
 }
 
 SUBJECT_ClassesAttended_RANGES = {
-    "DAA": "F27:F91",
-    "CN": "H27:H91",
-    "DEVOPS": "J27:J91",
-    "PPL": "L27:L91",
-    "NLP": "N27:N91",
+    "ML": "F27:F91",
+    "FLAT": "H27:H91",
+    "AI": "J27:J91",
+    "IOT": "L27:L91",
+    "RP": "N27:N91",
     "CN LAB": "P27:P91",
     "DEVOPS LAB": "R27:R91",
     "ACS LAB": "T27:T91",
@@ -116,7 +116,7 @@ def extract_classes_held(roll):
     try:
         driver = webdriver.Chrome(options=chrome_options)
         wait = WebDriverWait(driver, 10)
-        driver.get("https://exams-nnrg.in/BeeSERP/Login.aspx")
+        driver.get("https://exams-nnrg.in/")
         wait.until(EC.presence_of_element_located((By.ID, "txtUserName"))).send_keys(roll)
         driver.find_element(By.ID, "btnNext").click()
         wait.until(EC.presence_of_element_located((By.ID, "txtPassword"))).send_keys(roll)
@@ -138,7 +138,7 @@ def process_roll(roll):
             driver = webdriver.Chrome(options=chrome_options)
             driver.set_page_load_timeout(10)
             wait = WebDriverWait(driver, 5)
-            driver.get("https://exams-nnrg.in/BeeSERP/Login.aspx")
+            driver.get("https://exams-nnrg.in/")
             wait.until(EC.presence_of_element_located((By.ID, "txtUserName"))).send_keys(roll)
             driver.find_element(By.ID, "btnNext").click()
             wait.until(EC.presence_of_element_located((By.ID, "txtPassword"))).send_keys(roll)
