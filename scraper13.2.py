@@ -21,13 +21,13 @@ MAX_THREADS = 8
 
 SUBJECT_SHEETS = [
     "Overall %", "FLAT", "AI", "IOT", "RP", "ML",
-    "CN LAB", "DEVOPS LAB", "ACS LAB", "IPR",
+    "ML LAB", "AI LAB", "IOT LAB", "IPR",
     "SPORTS", "NPTEL", "ASSOCIATION", "LIB/MEN"
 ]
 
 SUBJECT_ALIASES = {
     "FLAT": "FLAT", "AI": "AI", "IOT": "IOT", "RP": "RP", "ML": "ML",
-    "CN LAB": "CN LAB", "DEVOPS LAB": "DEVOPS LAB", "ACS LAB": "ACS LAB", "IPR": "IPR",
+    "ML LAB": "ML LAB", "AI LAB": "AI LAB", "IOT LAB": "IOT LAB", "IPR": "IPR",
     "SPORTS": "SPORTS", "NPTEL": "NPTEL", "ASSOC": "ASSOCIATION", "ASSOCIATION": "ASSOCIATION",
     "LIB/MEN": "LIB/MEN", "LIB/MEN": "LIB/MEN"
 }
