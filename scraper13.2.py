@@ -38,13 +38,13 @@ SUBJECT_ClassesAttended_RANGES = {
     "AI": "J27:J91",
     "IOT": "L27:L91",
     "RP": "N27:N91",
-    "CN LAB": "P27:P91",
-    "DEVOPS LAB": "R27:R91",
-    "ACS LAB": "T27:T91",
-    "IPR": "V27:V91",
-    "SPORTS": "X27:X91",
-    "NPTEL": "Z27:Z91",
-    "ASSOCIATION": "AB27:AB91",
+    "ML LAB": "P27:P91",
+    "AI LAB": "R27:R91",
+    "IOT LAB": "T27:T91",
+    "IOMP": "V27:V91",
+    "ES": "X27:X91",
+    "SPRT": "Z27:Z91",
+    "MEN": "AB27:AB91",
     "LIB/MEN": "AD27:AD91"
 }
 
